@@ -1,0 +1,102 @@
+version: "3"
+
+services:
+  namenode:
+    image: doguin/hadoop-namenode:3.1.3
+    container_name: namenode-3.1.3
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+    ports:
+      - 9870:9870
+      - 50070:50070
+
+  datanode:
+    image: doguin/hadoop-datanode:3.1.3
+    container_name: datanode-3.1.3
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    env_file:
+      - ./hadoop.env
+    ports:
+      - 9864:9864
+      - 50075:50075
+
+  resourcemanager:
+    image: doguin/hadoop-resourcemanager:3.1.3
+    container_name: resourcemanager-3.1.3
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870 datanode:9864"
+    env_file:
+      - ./hadoop.env
+    ports:
+      - 8088:8088
+
+  nodemanager1:
+    image: doguin/hadoop-nodemanager:3.1.3
+    container_name: nodemanager-3.1.3
+    volumes:
+      - hadoop_nodemanager:/hadoop/yarn/local
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870 datanode:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    ports:
+      - 8042:8042
+
+  historyserver:
+    image: doguin/hadoop-historyserver:3.1.3
+    container_name: historyserver-3.1.3
+    volumes:
+      - hadoop_historyserver:/hadoop/yarn/timeline
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870 datanode:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+    ports:
+      - 8188:8188
+  
+  zoo:
+    image: zookeeper:3.4.14
+    container_name: zoo-3.4.14
+    hostname: zoo
+    restart: always
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888
+    ports:
+      - 2181:2181
+
+  hbase-master:
+    image: doguin/hbase-hmaster:2.2.5
+    container_name: hbase-master-2.2.5
+    hostname: hbase-master
+    env_file:
+      - ./hbase-distributed-local.env
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870 datanode:9864 zoo:2181"
+    ports:
+      - 16010:16010
+
+  hbase-region:
+    image: doguin/hbase-hregionserver:2.2.5
+    container_name: hbase-regionserver-2.2.5
+    hostname: hbase-regionserver
+    env_file:
+      - ./hbase-distributed-local.env
+    environment:
+      HBASE_CONF_hbase_regionserver_hostname: hbase-region
+      SERVICE_PRECONDITION: "namenode:9870 datanode:9864 zoo:2181"
+    ports:
+      - 16030:16030
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+  hadoop_historyserver:
+  hadoop_nodemanager:
