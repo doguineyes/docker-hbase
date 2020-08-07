@@ -66,6 +66,10 @@ services:
     container_name: zoo-3.4.14
     hostname: zoo
     restart: always
+    volumes:
+      - zoo_data_dir:/data
+      - zoo_log_dir:/logs
+      - zoo_data_log_dir:/datalog
     environment:
       ZOO_MY_ID: 1
       ZOO_SERVERS: server.1=0.0.0.0:2888:3888
@@ -86,12 +90,11 @@ services:
   hbase-region:
     image: doguin/hbase-hregionserver:2.2.5
     container_name: hbase-regionserver-2.2.5
-    hostname: hbase-regionserver
+    hostname: hbase-region
     env_file:
       - ./hbase-distributed-local.env
     environment:
-      HBASE_CONF_hbase_regionserver_hostname: hbase-region
-      SERVICE_PRECONDITION: "namenode:9870 datanode:9864 zoo:2181"
+      SERVICE_PRECONDITION: "namenode:9870 datanode:9864 zoo:2181 hbase_master:16000"
     ports:
       - 16030:16030
 
@@ -100,3 +103,6 @@ volumes:
   hadoop_datanode:
   hadoop_historyserver:
   hadoop_nodemanager:
+  zoo_data_dir:
+  zoo_log_dir:
+  zoo_data_log_dir:
